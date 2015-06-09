@@ -2,11 +2,14 @@
   "AWSTemplateFormatVersion": "2010-09-09",
   "Description": "Launches a Mesos Master cluster",
   "Parameters": {
+    "InstanceAmi": {
+      "Description": "Mesos AMI",
+      "Type": "String"
+    },
     "InstanceType": {
       "Description": "EC2 instance type",
       "Type": "String",
-      "Default": "d2.2xlarge",
-      "ConstraintDescription": "must be a valid EC2 instance type."
+      "Default": "d2.2xlarge"
     },
     "KeyName": {
       "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instances",
@@ -21,13 +24,13 @@
       "Description": "Number of nodes to launch",
       "Type": "Number"
     },
-    "QuorumSize": {
-      "Description": "Number of masters needed for Mesos replicated log registry quorum (should be ceiling(<ClusterSize>/2))",
-      "Type": "Number"
-    },
     "ExhibitorDiscoveryUrl": {
       "Description": "Exhibitor URL that returns active ZooKeeper nodes ('getCluster') (e.g., http://<exhibitor_node>/exhibitor/v1/cluster/list)",
       "Type": "String"
+    },
+    "QuorumSize": {
+      "Description": "Number of masters needed for Mesos replicated log registry quorum (should be ceiling(<ClusterSize>/2))",
+      "Type": "Number"
     },
     "ZkClientSecurityGroup": {
       "Description": "Security group ID for ZK clients (should grant access to ZK nodes)",

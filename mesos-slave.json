@@ -11,11 +11,6 @@
       "Type": "String",
       "Default": "d2.2xlarge"
     },
-    "SpotPrice": {
-      "Description": "EC2 SpotPrice",
-      "Type": "Number",
-      "Default": "0.2"
-    },
     "KeyName": {
       "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instances",
       "Type": "String"
@@ -31,6 +26,11 @@
     "ExhibitorDiscoveryUrl": {
       "Description": "Exhibitor URL that returns active ZooKeeper nodes ('getCluster') (e.g., http://<exhibitor_node>/exhibitor/v1/cluster/list)",
       "Type": "String"
+    },
+    "SpotPrice": {
+      "Description": "EC2 SpotPrice",
+      "Type": "Number",
+      "Default": "0.2"
     },
     "ZkClientSecurityGroup": {
       "Description": "Security group ID for ZK clients (should grant access to ZK nodes)",
