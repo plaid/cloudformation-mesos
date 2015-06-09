@@ -298,8 +298,8 @@
                 " || error_exit 'Failed to run cfn-init'\n",
                 "# Move docker dir to bigger device\n",
                 "service docker stop\n",
-                "mv /var/lib/docker /mnt/docker\n",
-                "ln -s /mnt/docker /var/lib/docker\n",
+                "mv /var/lib/docker /raid0/docker\n",
+                "ln -s /raid0/docker /var/lib/docker\n",
                 "service docker start\n",
                 {
                   "Fn::If": [
