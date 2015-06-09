@@ -244,13 +244,7 @@
           "Ref": "KeyName"
         },
         "ImageId": {
-          "Fn::FindInMap": [
-            "RegionMap",
-            {
-              "Ref": "AWS::Region"
-            },
-            "AMI"
-          ]
+          "Ref": "InstanceAmi"
         },
         "SecurityGroups": [
           {
