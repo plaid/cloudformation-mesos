@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "Launches a Mesos Master+Marathon cluster",
+  "Description": "Launches a Mesos Master cluster",
   "Parameters": {
     "InstanceAmi": {
       "Description": "Mesos AMI",
@@ -9,8 +9,7 @@
     "InstanceType": {
       "Description": "EC2 instance type",
       "Type": "String",
-      "Default": "d2.2xlarge",
-      "ConstraintDescription": "must be a valid EC2 instance type."
+      "Default": "d2.2xlarge"
     },
     "KeyName": {
       "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instances",
@@ -18,38 +17,24 @@
     },
     "ClusterId": {
       "Description": "Mesos cluster ID",
-      "Type": "String"
+      "Type": "String",
+      "Default": "mesos"
     },
     "ClusterSize": {
       "Description": "Number of nodes to launch",
-      "Type": "Number"
-    },
-    "QuorumSize": {
-      "Description": "Number of masters needed for Mesos replicated log registry quorum (should be ceiling(<ClusterSize>/2))",
       "Type": "Number"
     },
     "ExhibitorDiscoveryUrl": {
       "Description": "Exhibitor URL that returns active ZooKeeper nodes ('getCluster') (e.g., http://<exhibitor_node>/exhibitor/v1/cluster/list)",
       "Type": "String"
     },
+    "QuorumSize": {
+      "Description": "Number of masters needed for Mesos replicated log registry quorum (should be ceiling(<ClusterSize>/2))",
+      "Type": "Number"
+    },
     "ZkClientSecurityGroup": {
       "Description": "Security group ID for ZK clients (should grant access to ZK nodes)",
       "Type": "String"
-    },
-    "MarathonDockerImage": {
-      "Description": "The Marathon Docker image (format: 'registry:port/repository:version')",
-      "Type": "String",
-      "Default": "thefactory/marathon:0.7.5"
-    },
-    "MarathonLoggerDockerImage": {
-      "Description": "The marathon-logger Docker image (format: 'registry:port/repository:version')",
-      "Type": "String",
-      "Default": "thefactory/marathon-logger:latest"
-    },
-    "MarathonLoggerEventStore": {
-      "Description": "The marathon-logger event store connection string",
-      "Type": "String",
-      "Default": "in-memory://localhost/?max_length=100"
     },
     "DockerCredentials": {
       "Description": "JSON string to be saved as .dockercfg",
@@ -73,6 +58,33 @@
       "Description": "(Optional) If passed, only launch nodes in these AZs (e.g., 'us-east-1a,us-east-1b'). Must match the passed Subnets.",
       "Type": "CommaDelimitedList",
       "Default": ""
+    },
+    "MesosAwsAccessKey": {
+      "Description": "AWS Key to for Mesos",
+      "Type": "String"
+    },
+    "MesosAwsSecretAccessKey": {
+      "Description": "AWS Secret key for Mesos",
+      "Type": "String"
+    },
+    "SecurityGroup": {
+      "Description": "Security group for Mesos",
+      "Type": "String"
+    },
+    "ClusterSize": {
+      "Description": "Number of master nodes to launch",
+      "Type": "Number",
+      "Default": "1"
+    },
+    "QuorumSize": {
+      "Description": "Number of masters needed for Mesos replicated log registry quorum (should be ceiling(<MasterInstanceCount>/2))",
+      "Type": "Number",
+      "Default": "1"
+    },
+    "ClusterId": {
+      "Description": "Mesos cluster ID",
+      "Type": "String",
+      "Default": "mesos"
     }
   },
   "Conditions": {
@@ -80,7 +92,9 @@
       "Fn::Not": [
         {
           "Fn::Equals": [
-            {"Ref": "LogstashConfig"},
+            {
+              "Ref": "LogstashConfig"
+            },
             ""
           ]
         }
@@ -91,7 +105,9 @@
         {
           "Fn::Join": [
             "",
-            {"Ref": "AvailabilityZones"}
+            {
+              "Ref": "AvailabilityZones"
+            }
           ]
         },
         ""
@@ -99,30 +115,8 @@
     }
   },
   "Resources": {
-    "IAMUser": {
-      "Type": "AWS::IAM::User",
-      "Properties": {
-        "Policies": [
-          {
-            "PolicyName": "IAMAccess",
-            "PolicyDocument": {
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "NotAction": "iam:*",
-                  "Resource": "*"
-                }
-              ]
-            }
-          }
-        ]
-      }
-    },
-    "HostKeys": {
-      "Type": "AWS::IAM::AccessKey",
-      "Properties": {
-        "UserName": {"Ref": "IAMUser"}
-      }
+    "WaitHandle": {
+      "Type": "AWS::CloudFormation::WaitConditionHandle"
     },
     "ServerGroup": {
       "Type": "AWS::AutoScaling::AutoScalingGroup",
@@ -130,15 +124,29 @@
         "AvailabilityZones": {
           "Fn::If": [
             "UseAllAvailabilityZones",
-            {"Fn::GetAZs": ""},
-            {"Ref": "AvailabilityZones"}
+            {
+              "Fn::GetAZs": ""
+            },
+            {
+              "Ref": "AvailabilityZones"
+            }
           ]
         },
-        "LaunchConfigurationName": {"Ref": "LaunchConfig"},
-        "MinSize": {"Ref": "ClusterSize"},
-        "MaxSize": {"Ref": "ClusterSize"},
-        "DesiredCapacity": {"Ref": "ClusterSize"},
-        "VPCZoneIdentifier": {"Ref": "Subnets"},
+        "LaunchConfigurationName": {
+          "Ref": "LaunchConfig"
+        },
+        "MinSize": {
+          "Ref": "ClusterSize"
+        },
+        "MaxSize": {
+          "Ref": "ClusterSize"
+        },
+        "DesiredCapacity": {
+          "Ref": "ClusterSize"
+        },
+        "VPCZoneIdentifier": {
+          "Ref": "Subnets"
+        },
         "Tags": [
           {
             "Key": "role",
@@ -169,7 +177,9 @@
                   ]
                 },
                 "context": {
-                  "zk_discovery_url": {"Ref": "ExhibitorDiscoveryUrl"}
+                  "zk_discovery_url": {
+                    "Ref": "ExhibitorDiscoveryUrl"
+                  }
                 },
                 "mode": "000755",
                 "owner": "root",
@@ -188,8 +198,12 @@
                   ]
                 },
                 "context": {
-                  "mesos_cluster_id": {"Ref": "ClusterId"},
-                  "mesos_quorum": {"Ref": "QuorumSize"}
+                  "mesos_cluster_id": {
+                    "Ref": "ClusterId"
+                  },
+                  "mesos_quorum": {
+                    "Ref": "QuorumSize"
+                  }
                 },
                 "mode": "000755",
                 "owner": "root",
@@ -211,7 +225,9 @@
                 "group": "root"
               },
               "/root/.dockercfg": {
-                "content": {"Ref": "DockerCredentials"},
+                "content": {
+                  "Ref": "DockerCredentials"
+                },
                 "mode": "000644",
                 "owner": "root",
                 "group": "root"
@@ -227,14 +243,24 @@
         }
       },
       "Properties": {
-        "KeyName": {"Ref": "KeyName"},
-        "ImageId": {"Ref": "InstanceAmi"},
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "ImageId": {
+          "Ref": "InstanceAmi"
+        },
         "SecurityGroups": [
-          {"Ref": "SecurityGroup"},
-          {"Ref": "ZkClientSecurityGroup"}
+          {
+            "Ref": "SecurityGroup"
+          },
+          {
+            "Ref": "ZkClientSecurityGroup"
+          }
         ],
         "AssociatePublicIpAddress": "true",
-        "InstanceType": {"Ref": "InstanceType"},
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
         "UserData": {
           "Fn::Base64": {
             "Fn::Join": [
@@ -245,30 +271,35 @@
                 "function error_exit\n",
                 "{\n",
                 "  cfn-signal -e 1 -r \"$1\" '",
-                {"Ref": "WaitHandle"},
+                {
+                  "Ref": "WaitHandle"
+                },
                 "'\n",
                 "  exit 1\n",
                 "}\n",
                 "# Process CloudFormation init definitions\n",
                 "cfn-init -s ",
-                {"Ref": "AWS::StackName"},
+                {
+                  "Ref": "AWS::StackName"
+                },
                 " -r LaunchConfig ",
                 "    --access-key ",
-                {"Ref": "HostKeys"},
+                {
+                  "Ref": "MesosAwsAccessKey"
+                },
                 "    --secret-key ",
                 {
-                  "Fn::GetAtt": [
-                    "HostKeys",
-                    "SecretAccessKey"
-                  ]
+                  "Ref": "MesosAwsSecretAccessKey"
                 },
                 "    --region ",
-                {"Ref": "AWS::Region"},
+                {
+                  "Ref": "AWS::Region"
+                },
                 " || error_exit 'Failed to run cfn-init'\n",
                 "# Move docker dir to bigger device\n",
                 "service docker stop\n",
-                "mv /var/lib/docker /mnt/docker\n",
-                "ln -s /mnt/docker /var/lib/docker\n",
+                "mv /var/lib/docker /raid0/docker\n",
+                "ln -s /raid0/docker /var/lib/docker\n",
                 "service docker start\n",
                 {
                   "Fn::If": [
@@ -278,7 +309,9 @@
                         "",
                         [
                           "echo '",
-                          {"Ref": "LogstashConfig"},
+                          {
+                            "Ref": "LogstashConfig"
+                          },
                           "' > /opt/logstash/logstash.conf\n",
                           "runit-service create logstash '/opt/logstash/bin/logstash -f /opt/logstash/logstash.conf'\n",
                           "echo '/root' > /etc/sv/logstash/HOME\n",
@@ -292,43 +325,11 @@
                 "# Configure, enable, and start mesos-master\n",
                 "configure-mesos-master\n",
                 "runit-service enable mesos-master\n",
-                "# Set up and start Marathon \n",
-                "export HOME=/root/  # so Docker can find ~/.dockercfg\n",
-                "docker pull ",
-                {"Ref": "MarathonDockerImage"},
-                "\n",
-                "runit-service create marathon 'docker -r=false run ",
-                "   --net=host",
-                "   -p 8080:8080",
-                "   ",
-                {"Ref": "MarathonDockerImage"},
-                "     --master zk://`zk-list-nodes`/",
-                {"Ref": "ClusterId"},
-                "     --zk zk://`zk-list-nodes`/",
-                {"Ref": "ClusterId"},
-                "_marathon",
-                "     --event_subscriber http_callback",
-                "     --ha",
-                "     --hostname `ec2metadata --public-hostname`'\n",
-                "runit-service enable marathon\n",
-                "# Set up and run marathon-logger\n",
-                "docker pull ",
-                {"Ref": "MarathonLoggerDockerImage"},
-                "\n",
-                "runit-service create marathon-logger 'docker -r=false run ",
-                "   --net=host",
-                "   -p 5000:5000",
-                "   ",
-                {"Ref": "MarathonLoggerDockerImage"},
-                "     --marathon-url http://localhost:8080/",
-                "     --callback-url http://localhost:5000/events",
-                "     --event-store ",
-                {"Ref": "MarathonLoggerEventStore"},
-                "'\n",
-                "runit-service enable marathon-logger\n",
                 "# All is well so signal success\n",
                 "cfn-signal -e 0 -r \"Stack setup complete\" '",
-                {"Ref": "WaitHandle"},
+                {
+                  "Ref": "WaitHandle"
+                },
                 "'\n",
                 "#EOF"
               ]
@@ -336,31 +337,7 @@
           }
         }
       }
-    },
-    "SecurityGroup": {
-      "Type": "AWS::EC2::SecurityGroup",
-      "Properties": {
-        "GroupDescription": "Enable SSH, Mesos, and Marathon access",
-        "VpcId": {"Ref": "VpcId"}
-      }
-    },
-    "SecurityGroupIngress": {
-      "Type": "AWS::EC2::SecurityGroupIngress",
-      "Properties": {
-        "GroupId": {"Ref": "SecurityGroup"},
-        "IpProtocol": "-1",
-        "FromPort": "0",
-        "ToPort": "65535",
-        "SourceSecurityGroupId": {"Ref": "SecurityGroup"}
-      }
-    },
-    "WaitHandle": {
-      "Type": "AWS::CloudFormation::WaitConditionHandle"
     }
   },
-  "Outputs": {
-    "MesosMasterSecurityGroup": {
-      "Value": {"Ref": "SecurityGroup"}
-    }
-  }
+  "Outputs": {}
 }
