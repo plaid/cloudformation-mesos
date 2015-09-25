@@ -17,7 +17,8 @@
     },
     "ClusterId": {
       "Description": "Mesos cluster ID",
-      "Type": "String"
+      "Type": "String",
+      "Default": "mesos"
     },
     "ClusterSize": {
       "Description": "Number of nodes to launch",
