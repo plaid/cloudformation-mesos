@@ -52,6 +52,11 @@
       "Type": "String",
       "Default": ""
     },
+    "MesosAttributes": {
+      "Description": "(optional) Attributes to allocate to Mesos (as passed to --attributes).",
+      "Type": "String",
+      "Default": ""
+    },
     "Subnets": {
       "Description": "List of VPC subnet IDs for the cluster. Must match the passed AvailabilityZones.",
       "Type": "CommaDelimitedList"
@@ -80,7 +85,7 @@
     "ClusterSize": {
       "Description": "Number of master nodes to launch",
       "Type": "Number",
-      "Default": "3"
+      "Default": "4"
     }
   },
   "Conditions": {
@@ -176,6 +181,7 @@
                       "echo \"`/usr/bin/ec2metadata --public-hostname`\" > /etc/sv/mesos-slave/env/MESOS_HOSTNAME",
                       "echo \"{{executor_registration_timeout}}\" > /etc/sv/mesos-slave/env/MESOS_EXECUTOR_REGISTRATION_TIMEOUT",
                       "echo \"{{resources}}\" > /etc/sv/mesos-slave/env/MESOS_RESOURCES",
+                      "echo \"{{attributes}}\" > /etc/sv/mesos-slave/env/MESOS_ATTRIBUTES",
                       ""
                     ]
                   ]
@@ -187,6 +193,9 @@
                   "executor_registration_timeout": "5mins",
                   "resources": {
                     "Ref": "MesosResources"
+                  },
+                  "attributes": {
+                    "Ref": "MesosAttributes"
                   }
                 },
                 "mode": "000755",
